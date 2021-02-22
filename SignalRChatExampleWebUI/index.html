@@ -1,112 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <script src="scripts/bootstrap.min.js"></script>
-    <script src="scripts/jquery.min.js"></script>
-    <script src="scripts/signalr.min.js"></script>
 
-    <link rel="stylesheet" href="styles/bootstrap.min.css" />
-    <link rel="stylesheet" href="styles/style.css" />
+<head>
+  <script src="scripts/bootstrap.min.js"></script>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/signalr.min.js"></script>
 
-    <script>
-      $(document).ready(() => {
-        $(".disabled").attr("disabled", "disabled");
-        $(".users").click(function () {
-          $(".users").each((index, item) => {
-            item.classList.remove("active");
-          });
-          $(this).addClass("active");
+  <link rel="stylesheet" href="styles/bootstrap.min.css" />
+  <link rel="stylesheet" href="styles/style.css" />
+
+  <script>
+    $(document).ready(() => {
+      const connection = new signalR.HubConnectionBuilder()
+        .withUrl("https://localhost:5001/chathub")
+        .build();
+      connection.start();
+
+      $(".disabled").attr("disabled", "disabled");
+      $("body").on("click", ".users", function () {
+        $(".users").each((index, item) => {
+          item.classList.remove("active");
+        });
+        $(this).addClass("active");
+      });
+
+      $("#btnGirisYap").click(() => {
+        const nickName = $("#txtNickName").val();
+        connection
+          .invoke("GetNickName", nickName)
+          .catch((error) => console.log(error));
+        $(".disabled").removeAttr("disabled");
+
+      });
+      connection.on("clientJoined", (nickName) => {
+        $("#clientDurumMesajlari").html(`${nickName} Giriş Yaptı.`);
+        $("#clientDurumMesajlari").fadeIn(2000, () => {
+          setTimeout(() => {
+            $("#clientDurumMesajlari").fadeOut(2000);
+          }, 2000);
         });
       });
-    </script>
-  </head>
-  <body>
-    <div class="row">
-      <div class="col-md-1"></div>
-      <div class="col-md-10">
-        <div class="row">
-          <!-- SOL MENÜ! -->
-          <div class="col-md-3">
-            <input
-              class="form-control form-control-lg disabled"
-              type="text"
-              placeholder="Oda Adı"
-            />
-            <button type="button" class="btn btn-info rightButton disabled">
-              Oda Oluştur
-            </button>
-            <select
-              size="5"
-              style="width: 100%"
-              class="form-select disabled"
-              multiple
-            >
-              <option selected value="-1">Odalar</option>
-            </select>
-            <button type="button" class="btn btn-primary rightButton disabled">
-              Seçili Odalara Gir
-            </button>
-            <!-- ODA -->
-            <br /><br /><br />
-            <!--Clientlar-->
-            <div class="list-group">
-              <a class="list-group-item list-group-item-action users active"
-                >Tümü</a
-              >
-              <a
-                class="list-group-item list-group-item-action users"
-                aria-current="true"
-                >Cras Justo Odio</a
-              >
-            </div>
-          </div>
-          <div class="col-md-6">
-            <textarea
-              class="form-control"
-              style="margin-top: 5px"
-              placeholder="İletilecek Mesaj"
-              rows="3"
-            ></textarea>
-            <button
-              type="button"
-              class="btn btn-light rightButton"
-              id="btnGonder"
-            >
-              Gönder
-            </button>
-            <br /><br /><br />
-            <div class="list-group">
-              <a
-                class="list-group-item list-group-item-action"
-                aria-current="true"
-              >
-                <div class="d-flex w-100 justify-content-between">
-                  <h5 class="mb-1">Emircan</h5>
-                  <h5 class="mb-1">Sen</h5>
-                </div>
-                <p class="mb-1">donec id elit non mi ...</p>
-                <small>Donec id elit non mi porta.</small>
-              </a>
-            </div>
-            <!--Mesajlaşma!-->
-          </div>
-          <div class="col-md-3">
-            <input
-              class="form-control form-control-lg"
-              type="text"
-              placeholder="Adınız"
-            />
-            <button
-              type="button"
-              class="btn btn-success leftButton"
-              id="btnGirisYap"
-            >
-              Giriş Yap
-            </button>
+      connection.on("clients", clients => {
+        $("#_clients").html("");
+        $.each(clients, (index, item) => {
+          const user = $(".users").first().clone();
+          user.removeClass("active");
+          user.html(item.nickName);
+          $("#_clients").append(user);
+        })
+      })
+    });
+  </script>
+</head>
+
+<body>
+  <div class="row">
+    <div class="col-md-1"></div>
+    <div class="col-md-10">
+      <div class="row">
+        <!-- SOL MENÜ! -->
+        <div class="col-md-3">
+          <input class="form-control form-control-lg disabled" type="text" placeholder="Oda Adı" />
+          <button type="button" class="btn btn-info rightButton disabled">
+            Oda Oluştur
+          </button>
+          <select size="5" style="width: 100%" class="form-select disabled" multiple>
+            <option selected value="-1">Odalar</option>
+          </select>
+          <button type="button" class="btn btn-primary rightButton disabled">
+            Seçili Odalara Gir
+          </button>
+          <!-- ODA -->
+          <br /><br /><br />
+          <!--Clientlar-->
+          <div class="list-group clients">
+            <a class="list-group-item list-group-item-action users active">Tümü</a>
+            <div id="_clients"></div>
           </div>
         </div>
+        <div class="col-md-6">
+          <div class="alert alert-success" id="clientDurumMesajlari" style="display: none"></div>
+          <!-- Mesajlaşma -->
+          <textarea class="form-control" style="margin-top: 5px" placeholder="İletilecek Mesaj" rows="3"></textarea>
+          <button type="button" class="btn btn-light rightButton" id="btnGonder">
+            Gönder
+          </button>
+          <br /><br /><br />
+          <div class="list-group">
+            <a class="list-group-item list-group-item-action" aria-current="true">
+              <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">Emircan</h5>
+                <h5 class="mb-1">Sen</h5>
+              </div>
+              <p class="mb-1">donec id elit non mi ...</p>
+              <small>Donec id elit non mi porta.</small>
+            </a>
+          </div>
+          <!--Mesajlaşma!-->
+        </div>
+        <div class="col-md-3">
+          <input class="form-control form-control-lg" type="text" placeholder="Adınız" id="txtNickName" />
+          <button type="button" class="btn btn-success leftButton" id="btnGirisYap">
+            Giriş Yap
+          </button>
+        </div>
       </div>
-      <div class="col-md-1"></div>
     </div>
-  </body>
+    <div class="col-md-1"></div>
+  </div>
+</body>
+
 </html>
