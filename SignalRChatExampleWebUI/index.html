@@ -49,7 +49,65 @@
           $("#_clients").append(user);
         })
       })
-    });
+      connection.on("receiveMessage", (message, nickName) => {
+        const _message = $(".message").clone();
+        _message.removeClass("message");
+        _message.find("p").html(message);
+        _message.find("h5")[0].innerHTML = nickName;
+        $(".messages").append(_message);
+      })
+
+      $("#btnGonder").click(() => {
+        const clientName = $(".users.active").first().html();
+        const message = $("#txtMesaj").val();
+        connection.invoke("SendMessageAsync", message, clientName);
+
+        const _message = $(".message").clone();
+        _message.removeClass("message");
+        _message.find("p").html(message);
+        _message.find("h5")[1].innerHTML = "Sen";
+        $(".messages").append(_message);
+      });
+
+      $("#btnOdaOlustur").click(() => {
+        connection.invoke("AddGroup", $("#txtOdaAdi").val());
+      })
+      connection.on("groups", groups => {
+        $(".rooms").html("");
+        let options = `<option selected value="-1">Odalar</option>`;
+        $.each(groups, (index, item) => {
+          options += `<option value="${item.groupName}">${item.groupName}</option>`;
+        });
+        $(".rooms").append(options);
+      });
+
+      let _groupName = "";
+      $("#btnGrubaGonder").click(() => {
+        const message = $("#txtMesaj").val();
+        if (_groupName != "") {
+          connection.invoke("SendMessageToGroupAsync", _groupName, message);
+          const _message = $(".message").clone();
+          _message.removeClass("message");
+          _message.find("p").html(message);
+          _message.find("h5")[1].innerHTML = "Sen";
+          $(".messages").append(_message);
+        }
+      });
+
+      $("#btnOdalaraGir").click(() => {
+        let groupNames = [];
+        $(".rooms option:selected").map((i, e) => {
+          groupNames.push(e.innerHTML);
+        })
+        connection.invoke("AddClientToGroup", groupNames);
+      });
+
+      $(".rooms").change(function () {
+        let groupName = $(this).val();
+        _groupName = groupName[0];
+        connection.invoke("GetClientToGroup", groupName[0]);
+      });
+    })
   </script>
 </head>
 
@@ -60,16 +118,13 @@
       <div class="row">
         <!-- SOL MENÜ! -->
         <div class="col-md-3">
-          <input class="form-control form-control-lg disabled" type="text" placeholder="Oda Adı" />
-          <button type="button" class="btn btn-info rightButton disabled">
-            Oda Oluştur
-          </button>
-          <select size="5" style="width: 100%" class="form-select disabled" multiple>
+          <input class="form-control form-control-lg disabled" type="text" placeholder="Oda Adı" id="txtOdaAdi" />
+          <button type="button" class="btn btn-info rightButton disabled" id="btnOdaOlustur">Oda Oluştur</button>
+          <select size="5" style="width: 100%" class="form-select disabled rooms" multiple>
             <option selected value="-1">Odalar</option>
           </select>
-          <button type="button" class="btn btn-primary rightButton disabled">
-            Seçili Odalara Gir
-          </button>
+          <button type="button" class="btn btn-primary rightButton disabled " id="btnOdalaraGir">Seçili Odalara
+            Gir</button>
           <!-- ODA -->
           <br /><br /><br />
           <!--Clientlar-->
@@ -81,19 +136,18 @@
         <div class="col-md-6">
           <div class="alert alert-success" id="clientDurumMesajlari" style="display: none"></div>
           <!-- Mesajlaşma -->
-          <textarea class="form-control" style="margin-top: 5px" placeholder="İletilecek Mesaj" rows="3"></textarea>
-          <button type="button" class="btn btn-light rightButton" id="btnGonder">
-            Gönder
-          </button>
+          <textarea class="form-control" style="margin-top: 5px" placeholder="İletilecek Mesaj" rows="3"
+            id="txtMesaj"></textarea>
+          <button type="button" class="btn btn-light rightButton" id="btnGonder">Gönder</button>
+          <button type="button" class="btn btn-light rightButton" id="btnGrubaGonder">Gruba Gönder</button>
           <br /><br /><br />
-          <div class="list-group">
-            <a class="list-group-item list-group-item-action" aria-current="true">
+          <div class="list-group messages">
+            <a class="list-group-item list-group-item-action message" aria-current="true">
               <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">Emircan</h5>
-                <h5 class="mb-1">Sen</h5>
+                <h5 class="mb-1"></h5>
+                <h5 class="mb-1"></h5>
               </div>
-              <p class="mb-1">donec id elit non mi ...</p>
-              <small>Donec id elit non mi porta.</small>
+              <p class="mb-1"></p>
             </a>
           </div>
           <!--Mesajlaşma!-->
